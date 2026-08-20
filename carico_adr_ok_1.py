@@ -27,7 +27,7 @@ st.set_page_config(
 # 2. Configurazione Credenziali Utenti
 config_credenziali = {
     "usernames": {
-        "operatore1": { "name": "Mario Rossi (Addetto Carico)", "password": stauth.Hasher.hash("password123") },
+        "operatore1": { "name": "Mario Rossi (Addetto Carico)", "password": stauth.Hasher.hash("Kadr26") },
         "safety_manager": { "name": "Dott. Bianchi (Consulente ADR)", "password": stauth.Hasher.hash("admin456") }
     }
 }
