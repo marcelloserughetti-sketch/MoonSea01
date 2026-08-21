@@ -40,7 +40,7 @@ st.set_page_config(
 config_credenziali = {
     "usernames": {
         "operatore1": { "name": "Operatore (Addetto Carico)", "password": stauth.Hasher.hash("Kadr26") },
-        "safety_manager": { "name": "Dott. Bianchi (Consulente ADR)", "password": stauth.Hasher.hash("admin456") }
+        "safety_manager": { "name": "Dott. Bianchi (Consulente ADR)", "password": stauth.Hasher.hash("Admin77") }
     }
 }
 
