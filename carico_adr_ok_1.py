@@ -16,6 +16,7 @@ from streamlit_drawable_canvas import st_canvas
 from fpdf import FPDF
 from datetime import datetime
 import io
+from PIL import Image
 
 # 1. Configurazione della pagina (Interfaccia Professionale)
 st.set_page_config(
