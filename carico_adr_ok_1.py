@@ -125,7 +125,7 @@ elif authentication_status:
 
     note = st.text_area("Note Operative / Azioni Correttive Applicate sul Piazzale")
 
-      # --- SEZIONE 4: FIRME TOUCH ---
+         # --- SEZIONE 4: FIRME TOUCH ---
     st.header("✨ 4. Sottoscrizione Elettronica")
     st.caption("Firma direttamente all'interno dei box utilizzando lo schermo touch del dispositivo logistico.")
 
@@ -134,30 +134,18 @@ elif authentication_status:
     with col_firma1:
         st.markdown("**✍️ Firma dell'Addetto al Carico**")
         canvas_caricatore = st_canvas(
-            stroke_width=2, 
-            stroke_color="#1a5276", 
-            background_color="#FFFFFF",
-            height=110, 
-            width=280, 
-            drawing_mode="freedraw", 
-            update_streamlit=True,  # FORZA L'AGGIORNAMENTO IN TEMPO REALE
-            key="canvas_caricatore_adr"
+            stroke_width=2, stroke_color="#1a5276", background_color="#FFFFFF",
+            height=110, width=280, drawing_mode="freedraw", update_streamlit=True, key="canvas_caricatore_adr"
         )
 
     with col_firma2:
         st.markdown("**✍️ Firma del Conducente (Vettore)**")
         canvas_autista = st_canvas(
-            stroke_width=2, 
-            stroke_color="#1a5276", 
-            background_color="#FFFFFF",
-            height=110, 
-            width=280, 
-            drawing_mode="freedraw", 
-            update_streamlit=True,  # FORZA L'AGGIORNAMENTO IN TEMPO REALE
-            key="canvas_autista_adr"
+            stroke_width=2, stroke_color="#1a5276", background_color="#FFFFFF",
+            height=110, width=280, drawing_mode="freedraw", update_streamlit=True, key="canvas_autista_adr"
         )
 
-      # --- GENERAZIONE PDF ESPANSA ---
+    # --- GENERAZIONE PDF ---
     st.header("🖨️ 5. Esporta Documentazione")
     
     if st.button("🔄 Genera e Prepara Report PDF"):
@@ -165,23 +153,20 @@ elif authentication_status:
             pdf = FPDF()
             pdf.add_page()
             
-            # INSERISCE IL LOGO AZIENDALE NEL PDF (in alto a sinistra, largo 25 millimetri)
             try:
                 pdf.image(LOGO_URL, x=10, y=10, w=25)
-            except:
-                pass # Se il logo non viene trovato, il codice non va in crash e continua a generare il testo
+            except Exception:
+                pass
             
-            # Intestazione principale (spostata leggermente a destra per fare spazio al logo)
             pdf.set_font("Helvetica", "B", 16)
-            pdf.cell(30) # Spazio vuoto iniziale per non sovrapporsi al logo
+            pdf.cell(30)
             pdf.cell(0, 12, "CHECKLIST CARICATORE ADR - VERIFICA PREVENTIVA", ln=True, align="L")
             pdf.set_font("Helvetica", "I", 10)
-            pdf.cell(30) # Spazio vuoto
+            pdf.cell(30)
             pdf.cell(0, 6, f"Generata in data: {data_controllo.strftime('%d/%m/%Y')}", ln=True, align="L")
-            pdf.line(10, 38, 200, 38) # Abbassata leggermente la linea per far spazio al logo
+            pdf.line(10, 38, 200, 38)
             pdf.ln(15)
             
-            # Sezione Dati Anagrafici
             pdf.set_font("Helvetica", "B", 12)
             pdf.cell(0, 8, "1. ANAGRAFICA E SPEDIZIONE", ln=True)
             pdf.set_font("Helvetica", "", 10)
@@ -193,7 +178,6 @@ elif authentication_status:
             pdf.cell(95, 6, f"Classe ADR: {classe_adr}", ln=True)
             pdf.ln(5)
             
-            # Sezione Esito Check-list
             pdf.set_font("Helvetica", "B", 12)
             pdf.cell(0, 8, "2. ESITO E VALUTAZIONE RISCHI", ln=True)
             pdf.set_font("Helvetica", "", 10)
@@ -204,13 +188,11 @@ elif authentication_status:
             pdf.cell(0, 6, f"Note: {note if note else 'Nessuna nota aggiuntiva.'}", ln=True)
             pdf.ln(10)
 
-            # === QUI VIENE INSERITO IL BLOCCO DELLE FIRME CORRETTO ===
             pdf.set_font("Helvetica", "B", 12)
             pdf.cell(0, 8, "3. SOTTOSCRIZIONI", ln=True)
             
             y_firme = pdf.get_y()
             
-            # Salvataggio e verifica firma caricatore
             if canvas_caricatore is not None and canvas_caricatore.image_data is not None:
                 img_caricatore = Image.fromarray(canvas_caricatore.image_data.astype('uint8'), 'RGBA')
                 img_byte_arr1 = io.BytesIO()
@@ -221,7 +203,6 @@ elif authentication_status:
                 pdf.set_font("Helvetica", "I", 10)
                 pdf.text(15, y_firme+15, "[Firma non inserita a sistema]")
                 
-            # Salvataggio e verifica firma autista
             if canvas_autista is not None and canvas_autista.image_data is not None:
                 img_autista = Image.fromarray(canvas_autista.image_data.astype('uint8'), 'RGBA')
                 img_byte_arr2 = io.BytesIO()
@@ -238,24 +219,73 @@ elif authentication_status:
 
             # Output del documento pronto per il download
             pdf_output = bytes(pdf.output()) 
-            
             st.success("✅ Documento ADR generato con successo!")
             
-            # Unico grande pulsante ottimizzato per il download e la stampa successiva
+            # --- AGGIORNAMENTO AUTOMATICO DI GOOGLE FOGLI ALLA GENERAZIONE ---
+            try:
+                from streamlit_gsheets import GSheetsConnection
+                import pandas as pd
+                import os
+                
+                foglio_url = os.environ.get("GSHEETS_URL")
+                if foglio_url:
+                    conn = st.connection("gsheets", type=GSheetsConnection)
+                    df_esistente = conn.read(spreadsheet=foglio_url, ttl=0)
+                    
+                    nuovi_dati = {
+                        "Data": [data_controllo.strftime('%d/%m/%Y')],
+                        "Ora": [datetime.now().strftime('%H:%M:%S')],
+                        "Operatore": [operatore_controllo],
+                        "Mittente": [impresa_caricatrice],
+                        "Vettore": [vettore_trasportatore],
+                        "Targa": [targa_motrice],
+                        "ONU": [numero_onu],
+                        "Classe": [classe_adr],
+                        "Esito": [esito_finale],
+                        "Note": [note if note else ""]
+                    }
+                    df_nuovo = pd.DataFrame(nuovi_dati)
+                    df_aggiornato = pd.concat([df_esistente, df_nuovo], ignore_index=True)
+                    conn.update(spreadsheet=foglio_url, data=df_aggiornato)
+                    st.toast("📊 Registro Google Fogli aggiornato online!", icon="💾")
+            except Exception as e:
+                st.warning(f"⚠️ Impossibile aggiornare il registro online: {e}")
+
+            # Pulsante per il download del PDF
             st.download_button(
                 label="📥 SCARICA E STAMPA IL VERBALE ADR (PDF)",
                 data=pdf_output,
                 file_name=f"Checklist_ADR_{targa_motrice}_{data_controllo.strftime('%Y%m%d')}.pdf",
                 mime="application/pdf",
-                use_container_width=True  # Rende il pulsante grande e facile da cliccare sui touch screen
+                use_container_width=True
             )
-            
-            # Messaggio di aiuto per l'operatore sul piazzale
-            st.info("💡 **Nota per l'operatore:** Una volta cliccato il pulsante sopra, il file PDF si aprirà sul tuo dispositivo. Potrai stamparlo direttamente usando l'icona della stampante 🖨️ integrata nel tuo browser o nel lettore di documenti.")
+            st.info("💡 **Nota per l'operatore:** Una volta cliccato il pulsante sopra, il file PDF si aprirà sul tuo dispositivo. Potrai stamparlo direttamente usando l'icona della stampante 🖨️.")
                 
         except Exception as e:
             st.error(f"Errore durante la creazione del PDF: {e}")
- 
-            
-        except Exception as e:
-            st.error(f"Errore durante la generazione del PDF: {e}")
+
+    # --- SEZIONE PRIVATA: REGISTRO GOOGLE PER IL SAFETY MANAGER ---
+    if username_loggato == "safety_manager":
+        st.markdown("---")
+        st.header("📊 Pannello di Controllo Direzionale")
+        st.subheader("📁 Registro Cloud Spedizioni ADR (Google Sheets)")
+        
+        import os
+        foglio_url = os.environ.get("GSHEETS_URL")
+        
+        if foglio_url:
+            try:
+                from streamlit_gsheets import GSheetsConnection
+                conn = st.connection("gsheets", type=GSheetsConnection)
+                df_storico = conn.read(spreadsheet=foglio_url, ttl=0)
+                
+                # Mostra la tabella interattiva degli ultimi inserimenti
+                st.dataframe(df_storico.tail(20), use_container_width=True)
+                
+                # Link rapido per aprire il foglio online
+                st.link_button("🌐 Apri Registro Completo su Google Fogli", foglio_url, use_container_width=True)
+            except Exception as e:
+                st.error(f"Errore nel caricamento del registro aziendale: {e}")
+        else:
+            st.warning("⚠️ Variabile GSHEETS_URL non configurata nel pannello Environment di Render.")
+
