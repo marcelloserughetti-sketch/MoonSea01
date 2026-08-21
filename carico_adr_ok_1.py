@@ -1,4 +1,15 @@
-import streamlit as str
+import streamlit as st
+
+# === INIZIALIZZAZIONE DI SICUREZZA (Deve essere la prima cosa in assoluto) ===
+if "registro_storico" not in st.session_state:
+    st.session_state["registro_storico"] = []
+
+# 1. Configurazione della pagina
+st.set_page_config(
+    page_title="ADR Safety Check - Logistica Avanzata", 
+    page_icon="🚛",
+    layout="centered"
+)
 
 # Inserisci questo subito dopo set_page_config
 str.markdown(
