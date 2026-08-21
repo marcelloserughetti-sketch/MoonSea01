@@ -1,18 +1,18 @@
 import streamlit as st
 
-# === INIZIALIZZAZIONE DI SICUREZZA (Deve essere la prima cosa in assoluto) ===
+# === INIZIALIZZAZIONE DI SICUREZZA ===
 if "registro_storico" not in st.session_state:
     st.session_state["registro_storico"] = []
 
-# 1. Configurazione della pagina
+# 1. Configurazione della pagina (Deve essere tassativamente la PRIMA istruzione Streamlit grafica)
 st.set_page_config(
     page_title="ADR Safety Check - Logistica Avanzata", 
     page_icon="🚛",
     layout="centered"
 )
 
-# Inserisci questo subito dopo set_page_config
-str.markdown(
+# Meta tag per ottimizzazione mobile e touch (CORRETTO CON st.markdown)
+st.markdown(
     """
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
