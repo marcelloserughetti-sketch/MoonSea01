@@ -67,7 +67,7 @@ elif authentication_status:
         st.caption("Infrastruttura Cloud Crittografata")
 
     # --- APPLICATIVO PRINCIPALE CON LOGO E TITOLO ---
-    LOGO_URL = "https://placehold.co"
+    LOGO_URL = "timbro adr.jpg"
     
     col_logo, col_titolo = st.columns(2)
     with col_logo:
