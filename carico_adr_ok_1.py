@@ -124,7 +124,7 @@ elif authentication_status:
 
     note = st.text_area("Note Operative / Azioni Correttive Applicate sul Piazzale")
 
-    # --- SEZIONE 4: FIRME TOUCH ---
+      # --- SEZIONE 4: FIRME TOUCH ---
     st.header("✨ 4. Sottoscrizione Elettronica")
     st.caption("Firma direttamente all'interno dei box utilizzando lo schermo touch del dispositivo logistico.")
 
@@ -133,18 +133,30 @@ elif authentication_status:
     with col_firma1:
         st.markdown("**✍️ Firma dell'Addetto al Carico**")
         canvas_caricatore = st_canvas(
-            stroke_width=2, stroke_color="#1a5276", background_color="#FFFFFF",
-            height=110, width=280, drawing_mode="freedraw", key="canvas_caricatore_adr"
+            stroke_width=2, 
+            stroke_color="#1a5276", 
+            background_color="#FFFFFF",
+            height=110, 
+            width=280, 
+            drawing_mode="freedraw", 
+            update_streamlit=True,  # FORZA L'AGGIORNAMENTO IN TEMPO REALE
+            key="canvas_caricatore_adr"
         )
 
     with col_firma2:
         st.markdown("**✍️ Firma del Conducente (Vettore)**")
         canvas_autista = st_canvas(
-            stroke_width=2, stroke_color="#1a5276", background_color="#FFFFFF",
-            height=110, width=280, drawing_mode="freedraw", key="canvas_autista_adr"
+            stroke_width=2, 
+            stroke_color="#1a5276", 
+            background_color="#FFFFFF",
+            height=110, 
+            width=280, 
+            drawing_mode="freedraw", 
+            update_streamlit=True,  # FORZA L'AGGIORNAMENTO IN TEMPO REALE
+            key="canvas_autista_adr"
         )
 
-    # --- GENERAZIONE PDF ESPANSA ---
+      # --- GENERAZIONE PDF ESPANSA ---
     st.header("🖨️ 5. Esporta Documentazione")
     
     if st.button("🔄 Genera e Prepara Report PDF"):
@@ -176,50 +188,79 @@ elif authentication_status:
             pdf.set_font("Helvetica", "B", 12)
             pdf.cell(0, 8, "2. ESITO E VALUTAZIONE RISCHI", ln=True)
             pdf.set_font("Helvetica", "", 10)
-            pdf.cell(0, 6, f"Documentazione conforme: {controlli['c1_documenti']}", ln=True)
-            pdf.cell(0, 6, f"Integrita imballaggi: {controlli['c1_imballaggi']}", ln=True)
-            pdf.cell(0, 6, f"Stivaggio sicuro: {controlli['c2_stivaggio']}", ln=True)
-            pdf.cell(0, 6, f"Codice restrizione gallerie presente: {controlli['c3_formalita']}", ln=True)
-            pdf.ln(5)
-            
-            # Stato Finale
-            pdf.set_font("Helvetica", "B", 12)
-            pdf.cell(0, 8, "3. STATO FINALE DI VALUTAZIONE", ln=True)
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 6, f"ESITO: {esito_finale}", ln=True)
-            pdf.set_font("Helvetica", "I", 10)
-            pdf.cell(0, 6, f"Note di piazzale: {note}", ln=True)
-            pdf.ln(20)
-            
-            # Spazio Firme cartacee / digitali
+            pdf.cell(0, 6, f"Livello Criticita: {rischio_rilevato}", ln=True)
             pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(95, 6, "Firma Addetto al Carico:", ln=False)
-            pdf.cell(95, 6, "Firma Conducente (Vettore):", ln=True)
-            pdf.ln(15)
-            pdf.cell(95, 6, "_________________________", ln=False)
-            pdf.cell(95, 6, "_________________________", ln=True)
+            pdf.cell(0, 6, f"ESITO FINALE: {esito_finale}", ln=True)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(0, 6, f"Note: {note if note else 'Nessuna nota aggiuntiva.'}", ln=True)
+            pdf.ln(10)
 
-            # CORREZIONE: Gestione sicura del bytearray restituito da fpdf2
-            pdf_raw = pdf.output(dest='S')
-            pdf_bytes = bytes(pdf_raw) if isinstance(pdf_raw, (bytearray, bytes)) else pdf_raw.encode('latin1')
+            # === QUI VIENE INSERITO IL BLOCCO DELLE FIRME CORRETTO ===
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.cell(0, 8, "3. SOTTOSCRIZIONI", ln=True)
             
-            # Download Button abilitato dopo la generazione automatica
-            st.download_button(
-                label="⬇️ Scarica File PDF Compilato",
-                data=pdf_bytes,
-                file_name=f"ADR_Check_{targa_motrice}_{data_controllo.strftime('%Y%m%d')}.pdf",
-                mime="application/pdf"
-            )
+            y_firme = pdf.get_y()
             
-            st.success("✅ Documento PDF preparato con successo! Clicca sul pulsante sopra per salvarlo.")
+            # Salvataggio e verifica firma caricatore
+            if canvas_caricatore is not None and canvas_caricatore.image_data is not None:
+                img_caricatore = Image.fromarray(canvas_caricatore.image_data.astype('uint8'), 'RGBA')
+                img_byte_arr1 = io.BytesIO()
+                img_caricatore.save(img_byte_arr1, format='PNG')
+                img_byte_arr1.seek(0)
+                pdf.image(img_byte_arr1, x=15, y=y_firme+5, w=60)
+            else:
+                pdf.set_font("Helvetica", "I", 10)
+                pdf.text(15, y_firme+15, "[Firma non inserita a sistema]")
+                
+            # Salvataggio e verifica firma autista
+            if canvas_autista is not None and canvas_autista.image_data is not None:
+                img_autista = Image.fromarray(canvas_autista.image_data.astype('uint8'), 'RGBA')
+                img_byte_arr2 = io.BytesIO()
+                img_autista.save(img_byte_arr2, format='PNG')
+                img_byte_arr2.seek(0)
+                pdf.image(img_byte_arr2, x=110, y=y_firme+5, w=60)
+            else:
+                pdf.set_font("Helvetica", "I", 10)
+                pdf.text(110, y_firme+15, "[Firma non inserita a sistema]")
+
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.text(15, y_firme + 40, "Firma Addetto al Carico")
+            pdf.text(110, y_firme + 40, "Firma Conducente Vettore")
+
+            # Output del documento pronto per il download e la stampa diretta
+            pdf_output = pdf.output(dest='S').encode('latin-1')
+            st.success("✅ Documento ADR generato con successo!")
             
-            # Opzione di Stampa Diretta tramite Browser
-            st.markdown("---")
-            st.write("📌 **Vuoi stampare la schermata corrente?**")
-            st.components.v1.html(
-                '<button onclick="window.print()" style="padding: 12px 24px; background-color: #1a5276; color: white; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; width: 100%;">🖨️ Apri Menu di Stampa Browser</button>',
-                height=60
-            )
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                st.download_button(
+                    label="📥 Scarica file PDF",
+                    data=pdf_output,
+                    file_name=f"Checklist_ADR_{targa_motrice}_{data_controllo.strftime('%Y%m%d')}.pdf",
+                    mime="application/pdf"
+                )
+            with col_btn2:
+                st.markdown(
+                    """
+                    <button onclick="window.print()" style="
+                        background-color: #2e7d32; 
+                        color: white; 
+                        padding: 0.5rem 1rem; 
+                        border: none; 
+                        border-radius: 4px; 
+                        cursor: pointer; 
+                        font-weight: bold;
+                        width: 100%;
+                        height: 38px;">
+                        🖨️ Stampa Diretta Pagina
+                    </button>
+                    """, 
+                    unsafe_allow_html=True
+                )
+                
+        except Exception as e:
+            st.error(f"Errore durante la creazione del PDF: {e}")
+ 
             
         except Exception as e:
             st.error(f"Errore durante la generazione del PDF: {e}")
