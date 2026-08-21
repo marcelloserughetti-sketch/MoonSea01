@@ -229,7 +229,9 @@ elif authentication_status:
             pdf.text(110, y_firme + 40, "Firma Conducente Vettore")
 
             # Output del documento pronto per il download e la stampa diretta
-            pdf_output = pdf.output(dest='S').encode('latin-1')
+            # Convertiamo il bytearray di fpdf2 in un oggetto bytes standard richiesto da Streamlit
+            pdf_output = bytes(pdf.output()) 
+            
             st.success("✅ Documento ADR generato con successo!")
             
             col_btn1, col_btn2 = st.columns(2)
