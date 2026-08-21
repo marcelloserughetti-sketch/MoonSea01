@@ -228,38 +228,22 @@ elif authentication_status:
             pdf.text(15, y_firme + 40, "Firma Addetto al Carico")
             pdf.text(110, y_firme + 40, "Firma Conducente Vettore")
 
-            # Output del documento pronto per il download e la stampa diretta
-            # Convertiamo il bytearray di fpdf2 in un oggetto bytes standard richiesto da Streamlit
+            # Output del documento pronto per il download
             pdf_output = bytes(pdf.output()) 
             
             st.success("✅ Documento ADR generato con successo!")
             
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1:
-                st.download_button(
-                    label="📥 Scarica file PDF",
-                    data=pdf_output,
-                    file_name=f"Checklist_ADR_{targa_motrice}_{data_controllo.strftime('%Y%m%d')}.pdf",
-                    mime="application/pdf"
-                )
-            with col_btn2:
-                st.markdown(
-                    """
-                    <button onclick="window.print()" style="
-                        background-color: #2e7d32; 
-                        color: white; 
-                        padding: 0.5rem 1rem; 
-                        border: none; 
-                        border-radius: 4px; 
-                        cursor: pointer; 
-                        font-weight: bold;
-                        width: 100%;
-                        height: 38px;">
-                        🖨️ Stampa Diretta Pagina
-                    </button>
-                    """, 
-                    unsafe_allow_html=True
-                )
+            # Unico grande pulsante ottimizzato per il download e la stampa successiva
+            st.download_button(
+                label="📥 SCARICA E STAMPA IL VERBALE ADR (PDF)",
+                data=pdf_output,
+                file_name=f"Checklist_ADR_{targa_motrice}_{data_controllo.strftime('%Y%m%d')}.pdf",
+                mime="application/pdf",
+                use_container_width=True  # Rende il pulsante grande e facile da cliccare sui touch screen
+            )
+            
+            # Messaggio di aiuto per l'operatore sul piazzale
+            st.info("💡 **Nota per l'operatore:** Una volta cliccato il pulsante sopra, il file PDF si aprirà sul tuo dispositivo. Potrai stamparlo direttamente usando l'icona della stampante 🖨️ integrata nel tuo browser o nel lettore di documenti.")
                 
         except Exception as e:
             st.error(f"Errore durante la creazione del PDF: {e}")
