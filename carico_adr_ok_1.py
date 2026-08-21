@@ -125,7 +125,7 @@ elif authentication_status:
 
     note = st.text_area("Note Operative / Azioni Correttive Applicate sul Piazzale")
 
-         # --- SEZIONE 4: FIRME TOUCH ---
+             # --- SEZIONE 4: FIRME TOUCH ---
     st.header("✨ 4. Sottoscrizione Elettronica")
     st.caption("Firma direttamente all'interno dei box utilizzando lo schermo touch del dispositivo logistico.")
 
@@ -221,35 +221,21 @@ elif authentication_status:
             pdf_output = bytes(pdf.output()) 
             st.success("✅ Documento ADR generato con successo!")
             
-            # --- AGGIORNAMENTO AUTOMATICO DI GOOGLE FOGLI ALLA GENERAZIONE ---
-            try:
-                from streamlit_gsheets import GSheetsConnection
-                import pandas as pd
-                import os
-                
-                foglio_url = os.environ.get("GSHEETS_URL")
-                if foglio_url:
-                    conn = st.connection("gsheets", type=GSheetsConnection)
-                    df_esistente = conn.read(spreadsheet=foglio_url, ttl=0)
-                    
-                    nuovi_dati = {
-                        "Data": [data_controllo.strftime('%d/%m/%Y')],
-                        "Ora": [datetime.now().strftime('%H:%M:%S')],
-                        "Operatore": [operatore_controllo],
-                        "Mittente": [impresa_caricatrice],
-                        "Vettore": [vettore_trasportatore],
-                        "Targa": [targa_motrice],
-                        "ONU": [numero_onu],
-                        "Classe": [classe_adr],
-                        "Esito": [esito_finale],
-                        "Note": [note if note else ""]
-                    }
-                    df_nuovo = pd.DataFrame(nuovi_dati)
-                    df_aggiornato = pd.concat([df_esistente, df_nuovo], ignore_index=True)
-                    conn.update(spreadsheet=foglio_url, data=df_aggiornato)
-                    st.toast("📊 Registro Google Fogli aggiornato online!", icon="💾")
-            except Exception as e:
-                st.warning(f"⚠️ Impossibile aggiornare il registro online: {e}")
+            # --- SALVATAGGIO IN MEMORIA LOCALE AUTOMATICO ---
+            nuovo_record = {
+                "Data": data_controllo.strftime('%d/%m/%Y'),
+                "Ora": datetime.now().strftime('%H:%M:%S'),
+                "Operatore": operatore_controllo,
+                "Mittente": impresa_caricatrice,
+                "Vettore": vettore_trasportatore,
+                "Targa": targa_motrice,
+                "ONU": numero_onu,
+                "Classe": classe_adr,
+                "Esito": esito_finale,
+                "Note": note if note else ""
+            }
+            st.session_state["registro_storico"].append(nuovo_record)
+            st.toast("💾 Spedizione salvata temporaneamente nel registro!", icon="📝")
 
             # Pulsante per il download del PDF
             st.download_button(
@@ -264,28 +250,32 @@ elif authentication_status:
         except Exception as e:
             st.error(f"Errore durante la creazione del PDF: {e}")
 
-    # --- SEZIONE PRIVATA: REGISTRO GOOGLE PER IL SAFETY MANAGER ---
+    # --- SEZIONE PRIVATA: REGISTRO EXCEL LOCALE PER IL SAFETY MANAGER ---
     if username_loggato == "safety_manager":
         st.markdown("---")
         st.header("📊 Pannello di Controllo Direzionale")
-        st.subheader("📁 Registro Cloud Spedizioni ADR (Google Sheets)")
+        st.subheader("📁 Archivio Storico Registro ADR")
         
-        import os
-        foglio_url = os.environ.get("GSHEETS_URL")
-        
-        if foglio_url:
-            try:
-                from streamlit_gsheets import GSheetsConnection
-                conn = st.connection("gsheets", type=GSheetsConnection)
-                df_storico = conn.read(spreadsheet=foglio_url, ttl=0)
-                
-                # Mostra la tabella interattiva degli ultimi inserimenti
-                st.dataframe(df_storico.tail(20), use_container_width=True)
-                
-                # Link rapido per aprire il foglio online
-                st.link_button("🌐 Apri Registro Completo su Google Fogli", foglio_url, use_container_width=True)
-            except Exception as e:
-                st.error(f"Errore nel caricamento del registro aziendale: {e}")
+        if len(st.session_state["registro_storico"]) > 0:
+            import pandas as pd
+            
+            # Trasformiamo la memoria in una tabella Excel visibile
+            df_storico = pd.DataFrame(st.session_state["registro_storico"])
+            st.dataframe(df_storico.tail(20), use_container_width=True)
+            
+            # Convertiamo la tabella Excel in un file scaricabile al volo
+            buffer_excel = io.BytesIO()
+            with pd.ExcelWriter(buffer_excel, engine='openpyxl') as writer:
+                df_storico.to_excel(writer, index=False, sheet_name='Storico ADR')
+            
+            st.download_button(
+                label="📥 SCARICA DATABASE COMPLETO (EXCEL .XLSX)",
+                data=buffer_excel.getvalue(),
+                file_name=f"Registro_Storico_ADR_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
         else:
-            st.warning("⚠️ Variabile GSHEETS_URL non configurata nel pannello Environment di Render.")
+            st.info("ℹ️ L'archivio è attualmente vuoto in questa sessione. I dati appariranno qui non appena verrà generato il primo verbale PDF.")
+
 
