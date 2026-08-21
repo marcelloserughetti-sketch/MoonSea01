@@ -3,4 +3,4 @@ streamlit_authenticator
 streamlit-drawable-canvas
 fpdf2
 pandas
-st-gsheets-connection
+openpyxl
