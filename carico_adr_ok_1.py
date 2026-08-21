@@ -165,12 +165,20 @@ elif authentication_status:
             pdf = FPDF()
             pdf.add_page()
             
-            # Intestazione principale
+            # INSERISCE IL LOGO AZIENDALE NEL PDF (in alto a sinistra, largo 25 millimetri)
+            try:
+                pdf.image(LOGO_URL, x=10, y=10, w=25)
+            except:
+                pass # Se il logo non viene trovato, il codice non va in crash e continua a generare il testo
+            
+            # Intestazione principale (spostata leggermente a destra per fare spazio al logo)
             pdf.set_font("Helvetica", "B", 16)
-            pdf.cell(0, 12, "CHECKLIST CARICATORE ADR - VERIFICA PREVENTIVA", ln=True, align="C")
+            pdf.cell(30) # Spazio vuoto iniziale per non sovrapporsi al logo
+            pdf.cell(0, 12, "CHECKLIST CARICATORE ADR - VERIFICA PREVENTIVA", ln=True, align="L")
             pdf.set_font("Helvetica", "I", 10)
-            pdf.cell(0, 6, f"Generata in data: {data_controllo.strftime('%d/%m/%Y')}", ln=True, align="C")
-            pdf.line(10, 32, 200, 32)
+            pdf.cell(30) # Spazio vuoto
+            pdf.cell(0, 6, f"Generata in data: {data_controllo.strftime('%d/%m/%Y')}", ln=True, align="L")
+            pdf.line(10, 38, 200, 38) # Abbassata leggermente la linea per far spazio al logo
             pdf.ln(15)
             
             # Sezione Dati Anagrafici
